@@ -9,6 +9,7 @@ type PublicPostListQuery struct {
 	CategoryID uint   `form:"category_id"`
 	Sort       string `form:"sort"`
 	IsTop      *bool  `form:"is_top"`
+	Status     string `form:"status"`
 }
 
 type AdminPostListQuery struct {

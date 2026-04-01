@@ -37,6 +37,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 	authService := service.NewAuthService(adminRepo, cfg)
 	userService := service.NewUserService(userRepo, cfg)
+	userPostService := service.NewUserPostService(postRepo)
 	postService := service.NewPostService(postRepo)
 	tagService := service.NewTagService(tagRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
@@ -47,6 +48,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 	authCtl := controller.NewAuthController(authService)
 	userCtl := controller.NewUserController(userService)
+	userPostCtl := controller.NewUserPostController(userPostService)
 	postCtl := controller.NewPostController(postService)
 	tagCtl := controller.NewTagController(tagService)
 	categoryCtl := controller.NewCategoryController(categoryService)
@@ -88,11 +90,24 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 		api.GET("/posts", postCtl.ListPublic)
 		api.GET("/posts/:id", postCtl.GetPublicByID)
 		api.GET("/posts/slug/:slug", postCtl.GetPublicBySlug)
+		api.GET("/timeline", postCtl.Timeline)
 		api.GET("/tags", tagCtl.List)
 		api.GET("/categories", categoryCtl.List)
-		api.GET("/timeline", postCtl.Timeline)
 		api.GET("/site/settings", siteCtl.Get)
 
+		// 用户日记接口（需认证）
+		postsProtected := api.Group("/posts/my")
+		postsProtected.Use(middleware.JWT(cfg.JWTSecret))
+		{
+			postsProtected.GET("/", userPostCtl.ListMyPosts)
+			postsProtected.GET("/:id", userPostCtl.GetMyPostByID)
+			postsProtected.POST("/", userPostCtl.CreateMyPost)
+			postsProtected.PUT("/:id", userPostCtl.UpdateMyPost)
+			postsProtected.DELETE("/:id", userPostCtl.DeleteMyPost)
+			postsProtected.GET("/stats", userPostCtl.GetMyStats)
+		}
+
+		// 管理员接口（需认证）
 		admin := api.Group("/admin")
 		admin.Use(middleware.JWT(cfg.JWTSecret))
 		{

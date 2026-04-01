@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -225,4 +226,50 @@ func (r *PostRepository) CountByStatus(status string) (int64, error) {
 	var count int64
 	err := r.db.Model(&model.Post{}).Where("status = ?", status).Count(&count).Error
 	return count, err
+}
+
+func (r *PostRepository) CountByUser(userID uint) (int64, error) {
+	var count int64
+	err := r.db.Model(&model.Post{}).Where("user_id = ?", userID).Count(&count).Error
+	return count, err
+}
+
+func (r *PostRepository) CountByUserAndStatus(userID uint, status string) (int64, error) {
+	var count int64
+	err := r.db.Model(&model.Post{}).Where("user_id = ? AND status = ?", userID, status).Count(&count).Error
+	return count, err
+}
+
+func (r *PostRepository) ListUserPosts(ctx context.Context, userID uint, query dto.PublicPostListQuery) ([]model.Post, int64, error) {
+	var (
+		posts []model.Post
+		total int64
+	)
+
+	db := r.db.WithContext(ctx).Model(&model.Post{}).
+		Preload("Tags").
+		Preload("Category").
+		Where("user_id = ?", userID)
+
+	if query.Keyword != "" {
+		like := "%" + query.Keyword + "%"
+		db = db.Where("title ILIKE ? OR summary ILIKE ?", like, like)
+	}
+	if query.Status != "" {
+		db = db.Where("status = ?", query.Status)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := db.Order("created_at DESC").
+		Offset((query.Page - 1) * query.PageSize).
+		Limit(query.PageSize).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return posts, total, nil
 }
