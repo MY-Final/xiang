@@ -1,78 +1,98 @@
 version: '3.8'
 
+# ======================================================
+# 湘遇恋爱博客 - Docker Compose 配置
+# 单镜像部署（前后端合一）
+# ======================================================
+
 services:
+  # 主应用服务（前后端合一）
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: love-blog
+    restart: unless-stopped
+    ports:
+      - "5700:5700"  # 前端端口 5700
+    environment:
+      # 应用配置
+      - APP_ENV=production
+      - APP_PORT=8979
+
+      # 数据库配置
+      - DB_HOST=${DB_HOST:-127.0.0.1}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-myhx0308}
+      - DB_NAME=${DB_NAME:-love_blog}
+      - DB_SSLMODE=${DB_SSLMODE:-disable}
+
+      # JWT 配置（请修改为强随机字符串！）
+      - JWT_SECRET=${JWT_SECRET:-change_me_to_a_long_random_string_min_32_chars}
+      - JWT_EXPIRE_HOURS=72
+
+      # Redis 配置（可选）
+      - REDIS_ADDR=${REDIS_ADDR:-}
+
+      # CORS 配置
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:5700}
+
+    volumes:
+      - app_uploads:/app/uploads
+      - app_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - love-blog-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5700/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # PostgreSQL 数据库
   postgres:
     image: postgres:15-alpine
     container_name: love-blog-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-myhx0308}
-      POSTGRES_DB: love_blog
+      POSTGRES_DB: ${DB_NAME:-love_blog}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - love-blog-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis 缓存
+  # Redis 缓存（可选，用于会话管理）
   redis:
     image: redis:7-alpine
     container_name: love-blog-redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
     volumes:
       - redis_data:/data
+    networks:
+      - love-blog-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # 后端服务
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: love-blog-backend
-    environment:
-      APP_ENV: production
-      APP_PORT: 8979
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: ${DB_PASSWORD:-myhx0308}
-      DB_NAME: love_blog
-      DB_SSLMODE: disable
-      JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_string}
-      JWT_EXPIRE_HOURS: 72
-      UPLOAD_DIR: /app/uploads
-      REDIS_ADDR: redis:6379
-    volumes:
-      - ./backend/uploads:/app/uploads
-    ports:
-      - "8979:8979"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  # 前端服务
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: love-blog-frontend
-    ports:
-      - "6100:80"
-    depends_on:
-      - backend
+networks:
+  love-blog-network:
+    driver: bridge
 
 volumes:
+  app_uploads:
+  app_logs:
   postgres_data:
   redis_data:

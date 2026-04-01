@@ -5,6 +5,7 @@
 ![Vue 3](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vue.js)
 ![Go](https://img.shields.io/badge/Go-1.23-00ADD8?logo=go)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
 
 ---
 
@@ -16,7 +17,7 @@
 - 📸 **图片上传** - 支持多图上传和封面设置
 - 🔐 **用户认证** - JWT 认证，安全可靠
 - 📱 **响应式** - 完美适配移动端和桌面端
-- 🚀 **Docker** - 一键部署，快速启动
+- 🚀 **Docker** - 单镜像部署，一键启动
 
 ---
 
@@ -50,14 +51,24 @@ cd xiang
 
 # 2. 配置环境变量
 cp .env.example .env
+# 编辑 .env 修改 JWT_SECRET 和数据库密码
 
-# 3. 启动所有服务
+# 3. 构建并启动
 docker-compose up -d
 
 # 4. 访问
-# 前端：http://localhost:6100
-# 后端：http://localhost:8979
-# Swagger: http://localhost:8979/swagger
+# 前端：http://localhost:5700
+# Swagger: http://localhost:5700/swagger
+```
+
+### 使用部署脚本
+
+```bash
+# 赋予执行权限
+chmod +x deploy.sh
+
+# 运行部署
+./deploy.sh
 ```
 
 ### 本地开发
