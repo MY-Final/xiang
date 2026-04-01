@@ -28,6 +28,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 	})
 
 	adminRepo := repository.NewAdminRepository(db)
+	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
 	tagRepo := repository.NewTagRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
@@ -35,6 +36,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 	siteRepo := repository.NewSiteSettingRepository(db)
 
 	authService := service.NewAuthService(adminRepo, cfg)
+	userService := service.NewUserService(userRepo, cfg)
 	postService := service.NewPostService(postRepo)
 	tagService := service.NewTagService(tagRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
@@ -44,6 +46,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 	dashboardService := service.NewDashboardService(postRepo, tagRepo, categoryRepo, mediaRepo)
 
 	authCtl := controller.NewAuthController(authService)
+	userCtl := controller.NewUserController(userService)
 	postCtl := controller.NewPostController(postService)
 	tagCtl := controller.NewTagController(tagService)
 	categoryCtl := controller.NewCategoryController(categoryService)
@@ -54,6 +57,7 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 	api := r.Group("/api/v1")
 	{
+		// 管理员认证
 		auth := api.Group("/auth")
 		{
 			auth.POST("/login", authCtl.Login)
@@ -66,6 +70,21 @@ func New(db *gorm.DB, cfg config.Config) *gin.Engine {
 			}
 		}
 
+		// 普通用户接口
+		user := api.Group("/user")
+		{
+			user.POST("/register", userCtl.Register)
+			user.POST("/login", userCtl.Login)
+
+			userProtected := user.Group("")
+			userProtected.Use(middleware.JWT(cfg.JWTSecret))
+			{
+				userProtected.GET("/me", userCtl.GetMe)
+				userProtected.PUT("/profile", userCtl.UpdateProfile)
+			}
+		}
+
+		// 公开接口
 		api.GET("/posts", postCtl.ListPublic)
 		api.GET("/posts/:id", postCtl.GetPublicByID)
 		api.GET("/posts/slug/:slug", postCtl.GetPublicBySlug)

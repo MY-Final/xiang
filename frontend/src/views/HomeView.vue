@@ -26,6 +26,13 @@ const userStore = useUserStore()
             管理员登录
           </RouterLink>
         </div>
+
+        <div class="actions" v-if="userStore.isLoggedIn">
+          <RouterLink to="/posts" class="btn btn-primary">
+            <span class="btn-icon">📝</span>
+            浏览日记
+          </RouterLink>
+        </div>
       </div>
 
       <!-- 装饰性元素 -->

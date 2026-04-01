@@ -16,6 +16,22 @@ type Admin struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// User 普通用户模型（用于恋爱日记）
+type User struct {
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	Username     string         `gorm:"size:64;uniqueIndex;not null" json:"username"`
+	PasswordHash string         `gorm:"size:255;not null" json:"-"`
+	Nickname     string         `gorm:"size:128" json:"nickname"`
+	Avatar       string         `gorm:"size:255" json:"avatar"`
+	Email        string         `gorm:"size:128" json:"email"`
+	Birthday     *time.Time     `gorm:"index" json:"birthday"`
+	Anniversary  *time.Time     `gorm:"index" json:"anniversary"` // 纪念日
+	Status       string         `gorm:"size:32;default:active" json:"status"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
 type Category struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
 	Name        string         `gorm:"size:128;not null" json:"name"`
@@ -37,8 +53,10 @@ type Tag struct {
 
 type Post struct {
 	ID              uint           `gorm:"primaryKey" json:"id"`
+	UserID          uint           `gorm:"index;not null" json:"user_id"` // 所属用户 ID
+	User            *User          `json:"user,omitempty"`
 	Title           string         `gorm:"size:255;not null" json:"title"`
-	Slug            string         `gorm:"size:255;uniqueIndex;not null" json:"slug"`
+	Slug            string         `gorm:"size:255;uniqueIndex:idx_slug_user,not null" json:"slug"`
 	Summary         string         `gorm:"size:500" json:"summary"`
 	ContentMarkdown string         `gorm:"type:text" json:"content_markdown"`
 	ContentHTML     string         `gorm:"type:text" json:"content_html"`
@@ -81,5 +99,5 @@ type SiteSetting struct {
 }
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&Admin{}, &Category{}, &Tag{}, &Post{}, &PostTag{}, &Media{}, &SiteSetting{})
+	return db.AutoMigrate(&Admin{}, &User{}, &Category{}, &Tag{}, &Post{}, &PostTag{}, &Media{}, &SiteSetting{})
 }
