@@ -19,6 +19,9 @@ RUN npm install --frozen-lockfile
 # 复制前端源码
 COPY frontend/ ./
 
+# 复制生产环境配置
+COPY frontend/.env.production ./
+
 # 构建生产版本
 RUN npm run build
 
@@ -65,17 +68,7 @@ COPY --from=frontend-builder /app/frontend/dist /app/www
 COPY frontend/nginx.conf /etc/nginx/http.d/default.conf
 
 # 复制启动脚本
-COPY <<EOF /app/start.sh
-#!/bin/sh
-
-# 启动后端
-/app/server &
-
-# 启动 Nginx
-nginx -g 'daemon off;'
-EOF
-
-# 添加执行权限
+COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # 暴露端口

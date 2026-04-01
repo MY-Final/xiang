@@ -20,20 +20,20 @@ services:
       - APP_ENV=production
       - APP_PORT=8979
 
-      # 数据库配置
-      - DB_HOST=${DB_HOST:-127.0.0.1}
-      - DB_PORT=${DB_PORT:-5432}
+      # 数据库配置（Docker 网络内部使用服务名）
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-myhx0308}
       - DB_NAME=${DB_NAME:-love_blog}
-      - DB_SSLMODE=${DB_SSLMODE:-disable}
+      - DB_SSLMODE=disable
 
       # JWT 配置（请修改为强随机字符串！）
       - JWT_SECRET=${JWT_SECRET:-change_me_to_a_long_random_string_min_32_chars}
       - JWT_EXPIRE_HOURS=72
 
       # Redis 配置（可选）
-      - REDIS_ADDR=${REDIS_ADDR:-}
+      - REDIS_ADDR=redis:6379
 
       # CORS 配置
       - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:5700}
@@ -67,7 +67,7 @@ services:
     networks:
       - love-blog-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-love_blog}"]
       interval: 10s
       timeout: 5s
       retries: 5
